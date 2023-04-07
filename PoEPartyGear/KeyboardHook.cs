@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -58,7 +59,7 @@ public class KeyboardHook : IDisposable
     }
 
     private Window _window = new Window();
-    private int _currentId;
+    private System.Collections.Generic.Dictionary<string, int> ID_Dictionary = new System.Collections.Generic.Dictionary<string, int>();
 
     public KeyboardHook()
     {
@@ -77,12 +78,29 @@ public class KeyboardHook : IDisposable
     /// <param name="key">The key itself that is associated with the hot key.</param>
     public void RegisterHotKey(ModifierKeys modifier, Keys key)
     {
-        // increment the counter.
-        _currentId++;
+        if (ID_Dictionary.ContainsKey($"{modifier}_{key}"))
+        {
+            return;//hotkey already setup
+        }
+        int newID = 0;
+        while (ID_Dictionary.ContainsValue(newID))
+        {
+            newID++;
+        }
+        ID_Dictionary.Add($"{modifier}_{key}", newID);
 
         // register the hot key.
-        if (!RegisterHotKey(_window.Handle, _currentId, (uint)modifier, (uint)key))
+        if (!RegisterHotKey(_window.Handle, newID, (uint)modifier, (uint)key))
             throw new InvalidOperationException("Couldn’t register the hot key.");
+    }
+
+    public void UnregisterHotKey(ModifierKeys modifier, Keys key)
+    {
+        int ID = ID_Dictionary[$"{modifier}_{key}"];
+        ID_Dictionary.Remove($"{modifier}_{key}");
+        // register the hot key.
+        if (!UnregisterHotKey(_window.Handle, ID))
+            throw new InvalidOperationException("Couldn’t unregister the hot key.");
     }
 
     /// <summary>
@@ -95,9 +113,15 @@ public class KeyboardHook : IDisposable
     public void Dispose()
     {
         // unregister all the registered hot keys.
-        for (int i = _currentId; i > 0; i--)
+        //for (int i = _currentId; i > 0; i--)
+        //{
+        //    UnregisterHotKey(_window.Handle, i);
+        //}
+
+        foreach (KeyValuePair<string, int> kvp in ID_Dictionary)
         {
-            UnregisterHotKey(_window.Handle, i);
+            string[] keySplit = kvp.Key.Split('_');
+            UnregisterHotKey((IntPtr)int.Parse(keySplit[2]), kvp.Value);
         }
 
         // dispose the inner native window.

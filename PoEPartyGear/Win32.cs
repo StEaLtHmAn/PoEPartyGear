@@ -68,9 +68,9 @@ public class Win32
     [DllImport("User32.dll")]
     public static extern Int32 SendMessage(
     int hWnd,               // handle to destination window
-    int Msg,                // message
+    uint Msg,                // message
     int wParam,             // first message parameter
-    int lParam);            // second message parameter
+    uint lParam);            // second message parameter
 
 
     [DllImport("user32.dll")]

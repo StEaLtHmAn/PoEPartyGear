@@ -118,9 +118,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="OverlayCloseButton" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\OverlayCloseButton.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="ViewProfileButton" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\ViewProfileButton.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -132,5 +129,23 @@
   </data>
   <data name="ViewProfileButtonLight" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\ViewProfileButtonLight.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="alc" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\alc.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="scour" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\scour.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="alc2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\alc2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="alc3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\alc3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="scour2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\scour2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="scour3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\scour3.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

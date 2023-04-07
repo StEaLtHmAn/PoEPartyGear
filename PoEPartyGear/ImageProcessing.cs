@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Tesseract;
 
@@ -31,6 +32,38 @@ public class ImageProcessing
         return Point.Empty;
     }
 
+    public static Point LocateImageBestMatch(Bitmap bmpSource, Bitmap bmpImage, double threshold = 0.75)
+    {
+        Image<Bgr, byte> source = bmpSource.ToImage<Bgr, byte>();
+        Image<Bgr, byte> template = bmpImage.ToImage<Bgr, byte>();
+
+        Image<Gray, float> result = source.MatchTemplate(template, Emgu.CV.CvEnum.TemplateMatchingType.CcoeffNormed);
+        source.Dispose();
+        template.Dispose();
+
+        Point tmpPoint = Point.Empty;
+        double currentMatchPercentage = 0;
+        for (int y = 0; y < result.Data.GetLength(0); y++)
+        {
+            for (int x = 0; x < result.Data.GetLength(1); x++)
+            {
+                if (result.Data[y, x, 0] > threshold && result.Data[y, x, 0] > currentMatchPercentage) //Check if its a valid match
+                {
+                    currentMatchPercentage = result.Data[y, x, 0];
+                    tmpPoint = new Point(x, y);
+                }
+            }
+        }
+        result.Dispose();
+
+        return tmpPoint;
+    }
+
+    private static double GetDistance(Point p1, Point p2)
+    {
+        return Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));
+    }
+
     public static Point[] LocateImageMulti(Bitmap bmpSource, Bitmap bmpImage, double threshold = 0.85)
     {
         Image<Bgr, byte> source = bmpSource.ToImage<Bgr, byte>();
@@ -48,7 +81,7 @@ public class ImageProcessing
                 if (result.Data[y, x, 0] >= threshold) //Check if its a valid match
                 {
                     Point tmpPoint = new Point(x, y);
-                    if (!pointList.Contains(tmpPoint))//make sure we dont get duplicates, might have to improve this to skip nearby points as well
+                    if (!pointList.Contains(tmpPoint) && !pointList.Any(p => GetDistance(tmpPoint, p) < 8))
                         pointList.Add(tmpPoint);
                 }
             }

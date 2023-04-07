@@ -69,6 +69,12 @@
       <Private>True</Private>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.IO.Compression, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.Compression.4.3.0\lib\net46\System.IO.Compression.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Runtime, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.4.3.1\lib\net462\System.Runtime.dll</HintPath>
       <Private>True</Private>
@@ -111,6 +117,9 @@
     </Compile>
     <Compile Include="ImageProcessing.cs" />
     <Compile Include="MouseHook.cs" />
+    <Compile Include="NewProgressBar.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="OverlayErrorMessage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -208,6 +217,24 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\ViewProfileButtonLight.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\alc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\scour.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\alc3.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\alc2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\scour2.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\scour3.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Web.WebView2.1.0.1462.37\build\Microsoft.Web.WebView2.targets" Condition="Exists('..\packages\Microsoft.Web.WebView2.1.0.1462.37\build\Microsoft.Web.WebView2.targets')" />

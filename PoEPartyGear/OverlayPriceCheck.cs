@@ -5,9 +5,12 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Windows.Forms.AxHost;
 
 namespace PoEPartyGear
 {
@@ -43,26 +46,46 @@ namespace PoEPartyGear
                     {
                         int value = (int)Math.Round(double.Parse(predItem[1].ToString()) * 100);
 
-                        Label label = new Label();
-                        label.Margin = new Padding(3, 1, 3, 1);
-                        label.Size = new Size(228, 13);
-                        label.Text = predItem[0].ToString();
-                        flowLayoutPanel1.Controls.Add(label);
-
-                        ProgressBar progressBar = new ProgressBar();
-                        progressBar.Size = new Size(115, 15);
-                        progressBar.Value = Math.Abs(value);
-                        if (value > 0)
+                        Label label = new Label
                         {
-                            progressBar.Margin = new Padding(3, 1, 3, 1);
+                            Margin = new Padding(3, 1, 3, 1),
+                            Size = new Size(228, 13),
+                            Text = predItem[0].ToString()
+                        };
+                        flowLayoutPanel2.Controls.Add(label);
+
+                        if (value == 0)
+                        {
+                            Label label2 = new Label
+                            {
+                                Margin = new Padding(3, 1, 3, 1),
+                                Size = new Size(228, 14),
+                                Text = "-",
+                                TextAlign = ContentAlignment.MiddleCenter
+                            };
+                            flowLayoutPanel2.Controls.Add(label2);
+                        }
+                        else if (value > 0)
+                        {
+                            ProgressBar progressBar = new NewProgressBar
+                            {
+                                Size = new Size(115, 15),
+                                Value =value,
+                                Margin = new Padding(3, 1, 3, 1),
+                                ForeColor = Color.FromArgb(0, 180, 0)
+                            };
+                            flowLayoutPanel2.Controls.Add(progressBar);
                         }
                         else
                         {
-                            progressBar.RightToLeft = RightToLeft.Yes;
+                            ProgressBar progressBar = new NewProgressBar();
+                            progressBar.Value = Math.Abs(value);
+                            progressBar.Size = new Size(115, 14);
                             progressBar.RightToLeftLayout = true;
                             progressBar.Margin = new Padding(115, 1, 3, 1);
+                            progressBar.ForeColor = Color.FromArgb(180, 0, 0);
+                            flowLayoutPanel2.Controls.Add(progressBar);
                         }
-                        flowLayoutPanel1.Controls.Add(progressBar);
                     }
                 }
             }

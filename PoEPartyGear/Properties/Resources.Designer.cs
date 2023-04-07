@@ -63,9 +63,29 @@ namespace PoEPartyGear.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
-        internal static System.Drawing.Bitmap OverlayCloseButton {
+        internal static System.Drawing.Bitmap alc {
             get {
-                object obj = ResourceManager.GetObject("OverlayCloseButton", resourceCulture);
+                object obj = ResourceManager.GetObject("alc", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap alc2 {
+            get {
+                object obj = ResourceManager.GetObject("alc2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap alc3 {
+            get {
+                object obj = ResourceManager.GetObject("alc3", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -86,6 +106,36 @@ namespace PoEPartyGear.Properties {
         internal static System.Drawing.Bitmap PlayerMenuStripTopLeftCorner {
             get {
                 object obj = ResourceManager.GetObject("PlayerMenuStripTopLeftCorner", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap scour {
+            get {
+                object obj = ResourceManager.GetObject("scour", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap scour2 {
+            get {
+                object obj = ResourceManager.GetObject("scour2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap scour3 {
+            get {
+                object obj = ResourceManager.GetObject("scour3", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

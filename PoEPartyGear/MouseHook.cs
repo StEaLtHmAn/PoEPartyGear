@@ -13,8 +13,6 @@ public static class MouseHook
     public static void Start()
     {
         _hookID = SetHook(_proc);
-
-
     }
     public static void stop()
     {
@@ -89,6 +87,4 @@ public static class MouseHook
 
     [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
-
-
 }
