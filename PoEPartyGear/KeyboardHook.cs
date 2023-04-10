@@ -59,7 +59,7 @@ public class KeyboardHook : IDisposable
     }
 
     private Window _window = new Window();
-    private System.Collections.Generic.Dictionary<string, int> ID_Dictionary = new System.Collections.Generic.Dictionary<string, int>();
+    private Dictionary<string, int> ID_Dictionary = new Dictionary<string, int>();
 
     public KeyboardHook()
     {
@@ -69,6 +69,16 @@ public class KeyboardHook : IDisposable
             if (KeyPressed != null)
                 KeyPressed(this, args);
         };
+    }
+
+    public void clearHotkeys()
+    {
+        foreach (KeyValuePair<string, int> kvp in ID_Dictionary)
+        {
+            if (!UnregisterHotKey(_window.Handle, kvp.Value))
+                throw new InvalidOperationException("Couldn’t unregister the hot key.");
+        }
+        ID_Dictionary.Clear();
     }
 
     /// <summary>
@@ -112,16 +122,9 @@ public class KeyboardHook : IDisposable
 
     public void Dispose()
     {
-        // unregister all the registered hot keys.
-        //for (int i = _currentId; i > 0; i--)
-        //{
-        //    UnregisterHotKey(_window.Handle, i);
-        //}
-
         foreach (KeyValuePair<string, int> kvp in ID_Dictionary)
         {
-            string[] keySplit = kvp.Key.Split('_');
-            UnregisterHotKey((IntPtr)int.Parse(keySplit[2]), kvp.Value);
+            UnregisterHotKey(_window.Handle, kvp.Value);
         }
 
         // dispose the inner native window.
@@ -153,6 +156,45 @@ public class KeyPressedEventArgs : EventArgs
     public Keys Key
     {
         get { return _key; }
+    }
+
+    public static ModifierKeys GetModifiers(Keys keydata, out Keys key)
+    {
+        key = keydata;
+        ModifierKeys modifers = ModifierKeys.None;
+
+        // Check whether the keydata contains the CTRL modifier key.
+        // The value of Keys.Control is 131072.
+        if ((keydata & Keys.Control) == Keys.Control)
+        {
+            modifers |= ModifierKeys.Control;
+
+            key = keydata ^ Keys.Control;
+        }
+
+        // Check whether the keydata contains the SHIFT modifier key.
+        // The value of Keys.Control is 65536.
+        if ((keydata & Keys.Shift) == Keys.Shift)
+        {
+            modifers |= ModifierKeys.Shift;
+            key = key ^ Keys.Shift;
+        }
+
+        // Check whether the keydata contains the ALT modifier key.
+        // The value of Keys.Control is 262144.
+        if ((keydata & Keys.Alt) == Keys.Alt)
+        {
+            modifers |= ModifierKeys.Alt;
+            key = key ^ Keys.Alt;
+        }
+
+        // Check whether a key other than SHIFT, CTRL or ALT (Menu) is pressed.
+        if (key == Keys.ShiftKey || key == Keys.ControlKey || key == Keys.Menu)
+        {
+            key = Keys.None;
+        }
+
+        return modifers;
     }
 }
 

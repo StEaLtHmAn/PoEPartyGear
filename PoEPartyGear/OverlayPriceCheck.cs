@@ -16,6 +16,24 @@ namespace PoEPartyGear
 {
     public partial class OverlayPriceCheck : Form
     {
+        protected override bool ShowWithoutActivation
+        {
+            get { return false; }
+        }
+
+        private const int WS_EX_TOPMOST = 0x00000008;
+        private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams createParams = base.CreateParams;
+                createParams.ExStyle |= (WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+                return createParams;
+            }
+        }
+
         JObject PriceJsonObj;
         public OverlayPriceCheck(string PriceJson)
         {
@@ -98,7 +116,10 @@ namespace PoEPartyGear
         private void MouseHook_MouseAction(object sender, EventArgs e)
         {
             if (MousePosition.X < Left || MousePosition.Y < Top || MousePosition.X >= Right || MousePosition.Y >= Bottom)
+            {
+                MouseHook.stop();
                 Dispose();
+            }
         }
 
         private void OverlayButton_FormClosing(object sender, FormClosingEventArgs e)

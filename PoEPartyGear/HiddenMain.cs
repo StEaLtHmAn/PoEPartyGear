@@ -18,8 +18,6 @@ namespace PoEPartyGear
 {
     public partial class HiddenMain : Form
     {
-        KeyboardHook keyboardHook = new KeyboardHook();
-        IniHelper iniHelper = new IniHelper("settings.ini");
         public JObject LeagueData = null;
         private readonly MemoryCache _cache = MemoryCache.Default;
         int handle = 0;
@@ -27,40 +25,47 @@ namespace PoEPartyGear
 
         public HiddenMain()
         {
-            InitializeComponent();
-            Visible = false;
-
-            if (handle == 0)
-                getGameWindowHandle();
-            keyboardHook.KeyPressed += KeyboardHook_KeyPressedAsync;
-            //hotkeys
-            keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
-            keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
-            keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
-            keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
-
-            if (!System.IO.File.Exists("League.data"))
+            if (!checkForUpdates())
             {
-                using (WebClient client = new WebClient())
+                InitializeComponent();
+                Visible = false;
+
+                if (handle == 0)
+                    getGameWindowHandle();
+                Globals.keyboardHook.KeyPressed += KeyboardHook_KeyPressedAsync;
+                //hotkeys
+                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
+                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
+                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
+                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
+
+                if (!System.IO.File.Exists("League.data"))
                 {
-                    LeagueData = JObject.Parse(client.DownloadString("https://poe.ninja/api/data/getindexstate"));
-                    System.IO.File.WriteAllText("League.data", DateTime.Today.ToString() + Environment.NewLine + LeagueData.ToString(Newtonsoft.Json.Formatting.Indented));
-                }
-            }
-            else
-            {
-                DateTime checkDate = DateTime.Parse(System.IO.File.ReadAllText("League.data").Split(Environment.NewLine.ToCharArray())[0]);
-                if (DateTime.Today.Subtract(checkDate).TotalDays == 0)
-                    LeagueData = JObject.Parse(string.Join(Environment.NewLine, System.IO.File.ReadAllText("League.data")
-                                    .Split(Environment.NewLine.ToCharArray())
-                                    .Skip(1)
-                                    .ToArray()));
-                else
                     using (WebClient client = new WebClient())
                     {
                         LeagueData = JObject.Parse(client.DownloadString("https://poe.ninja/api/data/getindexstate"));
                         System.IO.File.WriteAllText("League.data", DateTime.Today.ToString() + Environment.NewLine + LeagueData.ToString(Newtonsoft.Json.Formatting.Indented));
                     }
+                }
+                else
+                {
+                    DateTime checkDate = DateTime.Parse(System.IO.File.ReadAllText("League.data").Split(Environment.NewLine.ToCharArray())[0]);
+                    if (DateTime.Today.Subtract(checkDate).TotalDays == 0)
+                        LeagueData = JObject.Parse(string.Join(Environment.NewLine, System.IO.File.ReadAllText("League.data")
+                                        .Split(Environment.NewLine.ToCharArray())
+                                        .Skip(1)
+                                        .ToArray()));
+                    else
+                        using (WebClient client = new WebClient())
+                        {
+                            LeagueData = JObject.Parse(client.DownloadString("https://poe.ninja/api/data/getindexstate"));
+                            System.IO.File.WriteAllText("League.data", DateTime.Today.ToString() + Environment.NewLine + LeagueData.ToString(Newtonsoft.Json.Formatting.Indented));
+                        }
+                }
+            }
+            else
+            {
+                Globals.DelayAction(0, new Action(() => { Dispose(); }));
             }
         }
 
@@ -69,7 +74,7 @@ namespace PoEPartyGear
             using (WebClient client = new WebClient())
             {
                 client.Headers.Add("User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-                string githubLatestReleaseJsonString = client.DownloadString("https://api.github.com/repos/StEaLtHmAn/TwitchHelperBot/releases/latest");
+                string githubLatestReleaseJsonString = client.DownloadString("https://api.github.com/repos/StEaLtHmAn/PoEPartyGear/releases/latest");
                 JObject githubLatestReleaseJson = JObject.Parse(githubLatestReleaseJsonString);
 
                 Version CurrentVersion = Assembly.GetEntryAssembly().GetName().Version;
@@ -92,7 +97,7 @@ namespace PoEPartyGear
                         if (asset["content_type"].ToString() == "application/x-zip-compressed")
                         {
                             MessageBox.Show(githubLatestReleaseJson["name"].ToString() + "\r\n\r\n" + githubLatestReleaseJson["body"].ToString(),
-                            "New Updates - Released " + /*Globals.getRelativeDateTime(*/DateTime.Parse(githubLatestReleaseJson["published_at"].ToString())/*)*/, MessageBoxButtons.OK);
+                            "New Updates - Released " + Globals.getRelativeDateTime(DateTime.Parse(githubLatestReleaseJson["published_at"].ToString())), MessageBoxButtons.OK);
 
                             //download latest zip
                             client.DownloadFile(asset["browser_download_url"].ToString(), asset["name"].ToString());
@@ -119,18 +124,18 @@ namespace PoEPartyGear
         {
             try
             {
-                if (!bool.Parse(iniHelper.Read("EnablePriceCheck") ?? "true"))
+                if (!bool.Parse(Globals.iniHelper.Read("EnablePriceCheck") ?? "true"))
                     return;
                 if (Application.OpenForms.OfType<OverlayPriceCheck>().Count() > 0)
                     Application.OpenForms.OfType<OverlayPriceCheck>().First().Dispose();
 
-                new WshShell().SendKeys("^{c}");
+                new WshShell().SendKeys("^(c)");
                 await Task.Delay(100);
                 string clipboardText = Clipboard.GetText();
                 int atemptes = 1;
                 while (string.IsNullOrEmpty(clipboardText) && atemptes < 5)
                 {
-                    new WshShell().SendKeys("^{c}");
+                    new WshShell().SendKeys("^(c)");
                     await Task.Delay(150 + atemptes * 50);
                     clipboardText = Clipboard.GetText();
                     atemptes++;
@@ -162,7 +167,7 @@ namespace PoEPartyGear
                                 case "One Hand Mace":
                                 case "Two Hand Mace":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=UniqueWeapon");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=UniqueWeapon");
                                         break;
                                     }
                                 case "Body Armours":
@@ -172,7 +177,7 @@ namespace PoEPartyGear
                                 case "Shields":
                                 case "Quivers":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=UniqueArmour");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=UniqueArmour");
                                         break;
                                     }
                                 case "Utility Flasks":
@@ -180,19 +185,19 @@ namespace PoEPartyGear
                                 case "Hybrid Flasks":
                                 case "Mana Flasks":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=UniqueFlask");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=UniqueFlask");
                                         break;
                                     }
                                 case "Belts":
                                 case "Amulets":
                                 case "Rings":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=UniqueAccessory");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=UniqueAccessory");
                                         break;
                                     }
                                 case "Jewels":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=UniqueJewel");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=UniqueJewel");
                                         break;
                                     }
                             }
@@ -280,27 +285,27 @@ namespace PoEPartyGear
                             {
                                 case "Stackable Currency":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/currencyoverview?league={iniHelper.Read("LeagueSelectedName")}&type=Currency");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/currencyoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=Currency");
                                         break;
                                     }
                                 case "Map Fragments":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/currencyoverview?league={iniHelper.Read("LeagueSelectedName")}&type=Fragment");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/currencyoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=Fragment");
                                         break;
                                     }
                                 case "Delve Stackable Socketable Currency":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=Resonator");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=Resonator");
                                         break;
                                     }
                                 case "Fossil":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=Fossil");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=Fossil");
                                         break;
                                     }
                                 case "Oil":
                                     {
-                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=Oil");
+                                        poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=Oil");
                                         break;
                                     }
                             }
@@ -352,7 +357,7 @@ namespace PoEPartyGear
                     {
                         using (WebClient client = new WebClient())
                         {
-                            poePriceesJSON = client.DownloadString($"https://www.poeprices.info/api?l={iniHelper.Read("LeagueSelectedName")}&i={Convert.ToBase64String(Encoding.UTF8.GetBytes(clipboardText))}");
+                            poePriceesJSON = client.DownloadString($"https://www.poeprices.info/api?l={Globals.iniHelper.Read("LeagueSelectedName")}&i={Convert.ToBase64String(Encoding.UTF8.GetBytes(clipboardText))}");
                             JObject PricesJSONobj = JObject.Parse(poePriceesJSON);
                             if (string.IsNullOrEmpty(PricesJSONobj["error_msg"].ToString()))
                                 _cache.Add(new CacheItem(clipboardText, poePriceesJSON), new CacheItemPolicy() { AbsoluteExpiration = new DateTimeOffset(DateTime.UtcNow.AddMinutes(10)) });
@@ -377,7 +382,7 @@ namespace PoEPartyGear
                     {
                         using (WebClient client = new WebClient())
                         {
-                            poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=SkillGem");
+                            poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=SkillGem");
                             if (!string.IsNullOrEmpty(poeNinjaUniqueJSON))
                                 _cache.Add(new CacheItem(poeNinjaUniqueJSON, poeNinjaUniqueJSON), new CacheItemPolicy() { AbsoluteExpiration = new DateTimeOffset(DateTime.UtcNow.AddDays(5)) });
                         }
@@ -449,7 +454,7 @@ namespace PoEPartyGear
                     {
                         using (WebClient client = new WebClient())
                         {
-                            poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={iniHelper.Read("LeagueSelectedName")}&type=DivinationCard");
+                            poeNinjaUniqueJSON = client.DownloadString($"https://poe.ninja/api/data/itemoverview?league={Globals.iniHelper.Read("LeagueSelectedName")}&type=DivinationCard");
                             if (!string.IsNullOrEmpty(poeNinjaUniqueJSON))
                                 _cache.Add(new CacheItem(poeNinjaUniqueJSON, poeNinjaUniqueJSON), new CacheItemPolicy() { AbsoluteExpiration = new DateTimeOffset(DateTime.UtcNow.AddDays(5)) });
                         }
@@ -579,7 +584,7 @@ namespace PoEPartyGear
                         busyRollingMap = false;
                         return;
                     }
-                    string ExcludedMapMods = iniHelper.Read("ExcludedMapMods") ?? string.Empty;
+                    string ExcludedMapMods = Globals.iniHelper.Read("ExcludedMapMods") ?? string.Empty;
 
                     if (clipboardText.Contains("Rarity: Normal"))
                     {
@@ -677,9 +682,9 @@ namespace PoEPartyGear
             {
                 if (Win32.GetForegroundWindow() != handle)
                 {
-                    keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.D);
+                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.D);
                     new WshShell().SendKeys("^{d}");
-                    keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
+                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
                     return;
                 }
                 await CtrlD_Pressed();
@@ -689,9 +694,9 @@ namespace PoEPartyGear
             {
                 if (Win32.GetForegroundWindow() != handle)
                 {
-                    keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.A);
+                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.A);
                     new WshShell().SendKeys("^{a}");
-                    keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
+                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
                     return;
                 }
                 await CtrlA_Pressed();
@@ -701,12 +706,12 @@ namespace PoEPartyGear
             {
                 if (Win32.GetForegroundWindow() != handle)
                 {
-                    keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.F5);
+                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.F5);
                     new WshShell().SendKeys("{F5}");
-                    keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
+                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
                     return;
                 }
-                if (!bool.Parse(iniHelper.Read("EnableHideoutTP") ?? "true"))
+                if (!bool.Parse(Globals.iniHelper.Read("EnableHideoutTP") ?? "true"))
                     return;
                 new WshShell().SendKeys("~/hideout~");
                 return;
@@ -714,33 +719,33 @@ namespace PoEPartyGear
 
             if (e.Key == Keys.D1 && e.Modifier == global::ModifierKeys.None)
             {
-                keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.D1);
+                Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.D1);
                 new WshShell().SendKeys("{1}");
-                keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
+                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
 
                 if (Win32.GetForegroundWindow() != handle)
                     return;
-                if (!bool.Parse(iniHelper.Read("EnableFlaskHelper") ?? "true"))
+                if (!bool.Parse(Globals.iniHelper.Read("EnableFlaskHelper") ?? "true"))
                     return;
-                await Task.Delay(new Random().Next(80));
-                if (bool.Parse(iniHelper.Read("EnableFlaskHelperKey2") ?? "true"))
+                await Task.Delay(new Random().Next(75));
+                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey2") ?? "true"))
                 {
-                    await Task.Delay(new Random().Next(80));
+                    await Task.Delay(new Random().Next(75));
                     new WshShell().SendKeys("2");
                 }
-                if (bool.Parse(iniHelper.Read("EnableFlaskHelperKey3") ?? "true"))
+                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey3") ?? "true"))
                 {
-                    await Task.Delay(new Random().Next(80));
+                    await Task.Delay(new Random().Next(75));
                     new WshShell().SendKeys("3");
                 }
-                if (bool.Parse(iniHelper.Read("EnableFlaskHelperKey4") ?? "true"))
+                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey4") ?? "true"))
                 {
-                    await Task.Delay(new Random().Next(80));
+                    await Task.Delay(new Random().Next(75));
                     new WshShell().SendKeys("4");
                 }
-                if (bool.Parse(iniHelper.Read("EnableFlaskHelperKey5") ?? "true"))
+                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey5") ?? "true"))
                 {
-                    await Task.Delay(new Random().Next(80));
+                    await Task.Delay(new Random().Next(75));
                     new WshShell().SendKeys("5");
                 }
                 return;
@@ -772,7 +777,7 @@ namespace PoEPartyGear
             timer1.Enabled = false;
             try
             {
-                if (!bool.Parse(iniHelper.Read("EnableViewProfileButton") ?? "true"))
+                if (!bool.Parse(Globals.iniHelper.Read("EnableViewProfileButton") ?? "true"))
                     return;
 
                 if (Application.OpenForms.OfType<OverlayButton>().Count() == 0 && Application.OpenForms.OfType<BrowserForm>().Count() == 0)
@@ -812,7 +817,7 @@ namespace PoEPartyGear
 
         private void HiddenMain_FormClosed(object sender, FormClosedEventArgs e)
         {
-            keyboardHook.Dispose();
+            Globals.keyboardHook.Dispose();
         }
 
         protected override CreateParams CreateParams

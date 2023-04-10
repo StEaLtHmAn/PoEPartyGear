@@ -15,6 +15,24 @@ namespace PoEPartyGear
 {
     public partial class OverlayButton : Form
     {
+        protected override bool ShowWithoutActivation
+        {
+            get { return false; }
+        }
+
+        private const int WS_EX_TOPMOST = 0x00000008;
+        private const int WS_EX_NOACTIVATE = 0x08000000;
+        private const int WS_EX_TOOLWINDOW = 0x00000080;
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams createParams = base.CreateParams;
+                createParams.ExStyle |= (WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+                return createParams;
+            }
+        }
+
         IniHelper iniHelper = new IniHelper("settings.ini");
         string ViewProfileSource = "Official";
         string OCRstring;
@@ -31,9 +49,12 @@ namespace PoEPartyGear
 
         private void MouseHook_MouseAction(object sender, EventArgs e)
         {
-            if (Application.OpenForms.OfType<BrowserForm>().Count() == 0)
-            if (MousePosition.X < Left || MousePosition.Y < Top || MousePosition.X >= Right || MousePosition.Y >= Bottom)
+            if (Application.OpenForms.OfType<BrowserForm>().Count() == 0 &&
+                (MousePosition.X < Left || MousePosition.Y < Top || MousePosition.X >= Right || MousePosition.Y >= Bottom))
+            {
+                MouseHook.stop();
                 Dispose();
+            }
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -71,11 +92,13 @@ namespace PoEPartyGear
             BrowserForm form = new BrowserForm($"https://www.pathofexile.com/account/view-profile/{accountName}/characters?&characterName={characterName}", title);
             form.ShowDialog();
 
+            MouseHook.stop();
             Dispose();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
+            MouseHook.stop();
             Dispose();
         }
 
