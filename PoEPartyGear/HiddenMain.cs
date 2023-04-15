@@ -11,8 +11,9 @@ using System.Reflection;
 using System.Runtime.Caching;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Windows.Forms;
+using System.Windows.Input;
 
 namespace PoEPartyGear
 {
@@ -32,12 +33,6 @@ namespace PoEPartyGear
 
                 if (handle == 0)
                     getGameWindowHandle();
-                Globals.keyboardHook.KeyPressed += KeyboardHook_KeyPressedAsync;
-                //hotkeys
-                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
-                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
-                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
-                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
 
                 if (!System.IO.File.Exists("League.data"))
                 {
@@ -62,10 +57,79 @@ namespace PoEPartyGear
                             System.IO.File.WriteAllText("League.data", DateTime.Today.ToString() + Environment.NewLine + LeagueData.ToString(Newtonsoft.Json.Formatting.Indented));
                         }
                 }
+
+                LowLevelKeyboardHook.KeyPressed += LowLevelKeyboardHook_KeyPressed;
+                LowLevelKeyboardHook.Start();
             }
             else
             {
                 Globals.DelayAction(0, new Action(() => { Dispose(); }));
+            }
+        }
+
+        private void LowLevelKeyboardHook_KeyPressed(object sender, /*LowLevelKeyboardHook.KeyPressed*/EventArgs e)
+        {
+            try
+            {
+                //if poe not in front
+                if (Win32.GetForegroundWindow() != handle)
+                {
+                    //return;
+                }
+
+                //if (e.Keys.Length == 2 && e.Keys.Contains(Keys.D) && e.Keys.Contains(Keys.LControlKey))
+                if ((bool)Invoke((Func<bool>)delegate { return Keyboard.IsKeyDown(Key.D) && Keyboard.IsKeyDown(Key.LeftCtrl); }))
+                {
+                    CtrlD_Pressed();
+                }
+                //else if (e.Keys.Length == 2 && e.Keys.Contains(Keys.A) && e.Keys.Contains(Keys.LControlKey))
+                else if((bool)Invoke((Func<bool>)delegate { return Keyboard.IsKeyDown(Key.A) && Keyboard.IsKeyDown(Key.LeftCtrl); }))
+                {
+                    CtrlA_Pressed();
+                }
+                //else if (e.Keys.Length == 1 && e.Keys[0] == Keys.F5)
+                else  if ((bool)Invoke((Func<bool>)delegate { return Keyboard.IsKeyDown(Key.F5); }))
+                {
+                    if (!bool.Parse(Globals.iniHelper.Read("EnableHideoutTP") ?? "true"))
+                        return;
+                    LowLevelKeyboardHook.pause = true;
+                    new WshShell().SendKeys("~/hideout~");
+                    LowLevelKeyboardHook.pause = false;
+                }
+                //else if (e.Keys.Length == 1 && e.Keys[0] == Keys.D1)
+                else if ((bool)Invoke((Func<bool>)delegate { return Keyboard.IsKeyDown(Key.D1); }))
+                {
+                    if (!bool.Parse(Globals.iniHelper.Read("EnableHideoutTP") ?? "true"))
+                        return;
+
+                    Thread.Sleep(new Random().Next(75));
+                    LowLevelKeyboardHook.pause = true;
+                    if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey2") ?? "true"))
+                    {
+                        Thread.Sleep(new Random().Next(75));
+                        new WshShell().SendKeys("2");
+                    }
+                    if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey3") ?? "true"))
+                    {
+                        Thread.Sleep(new Random().Next(75));
+                        new WshShell().SendKeys("3");
+                    }
+                    if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey4") ?? "true"))
+                    {
+                        Thread.Sleep(new Random().Next(75));
+                        new WshShell().SendKeys("4");
+                    }
+                    if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey5") ?? "true"))
+                    {
+                        Thread.Sleep(new Random().Next(75));
+                        new WshShell().SendKeys("5");
+                    }
+                    LowLevelKeyboardHook.pause = false;
+                }
+            }
+            catch(Exception ex)
+            {
+                Globals.LogMessage(ex.ToString());
             }
         }
 
@@ -120,8 +184,29 @@ namespace PoEPartyGear
             return false;
         }
 
-        private async Task CtrlD_Pressed()
+        private void CtrlD_Pressed()
         {
+            string GetClipboardData()
+            {
+                string clipboardText = null;
+                int attempts = 0;
+                while (string.IsNullOrEmpty(clipboardText) && attempts < 10)
+                {
+                    try
+                    {
+                        Thread.Sleep(10);
+                        Invoke(new Action(() =>
+                        {
+                            clipboardText = Clipboard.GetDataObject().GetData(DataFormats.UnicodeText, false) as string;
+                        }));
+                    }
+                    catch { }
+                    attempts++;
+                }
+                return clipboardText;
+            }
+
+            LowLevelKeyboardHook.pause = true;
             try
             {
                 if (!bool.Parse(Globals.iniHelper.Read("EnablePriceCheck") ?? "true"))
@@ -130,17 +215,21 @@ namespace PoEPartyGear
                     Application.OpenForms.OfType<OverlayPriceCheck>().First().Dispose();
 
                 new WshShell().SendKeys("^(c)");
-                await Task.Delay(100);
-                string clipboardText = Clipboard.GetText();
-                int atemptes = 1;
-                while (string.IsNullOrEmpty(clipboardText) && atemptes < 5)
+                Thread.Sleep(100);
+                string clipboardText = GetClipboardData();
+                int attempts = 0;
+                while (string.IsNullOrEmpty(clipboardText) && attempts < 5)
                 {
                     new WshShell().SendKeys("^(c)");
-                    await Task.Delay(150 + atemptes * 50);
-                    clipboardText = Clipboard.GetText();
-                    atemptes++;
+                    Thread.Sleep(150 + attempts * 50);
+                    clipboardText = GetClipboardData();
+                    attempts++;
+                    Debug.WriteLine("Clipboard get data attempts: " + attempts);
                 }
-                Clipboard.Clear();
+                Invoke(new Action(() =>
+                {
+                    Clipboard.Clear();
+                }));
                 if (clipboardText.Contains("Rarity: Unique"))
                 {
                     string itemType = clipboardText.Substring(12, clipboardText.IndexOf("\r\n", 12) - 10).Trim();
@@ -243,18 +332,21 @@ namespace PoEPartyGear
                     }
                     valueMax = value;
 
-                    OverlayPriceCheck form = new OverlayPriceCheck(
-                        new JObject {
-                                { "min", value},
-                                { "max", valueMax},
-                                { "currency", currency}
-                        }.ToString(Newtonsoft.Json.Formatting.None));
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    if (Cursor.Position.X + form.Width > bounds.Width)
-                        form.Location = new Point(Cursor.Position.X - form.Width, Cursor.Position.Y);
-                    else
-                        form.Location = new Point(Cursor.Position.X, Cursor.Position.Y);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayPriceCheck form = new OverlayPriceCheck(
+                            new JObject {
+                                    { "min", value},
+                                    { "max", valueMax},
+                                    { "currency", currency}
+                            }.ToString(Newtonsoft.Json.Formatting.None));
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        if (System.Windows.Forms.Cursor.Position.X + form.Width > bounds.Width)
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X - form.Width, System.Windows.Forms.Cursor.Position.Y);
+                        else
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+                        form.Show();
+                    }));
                 }
                 else if (clipboardText.Contains("Item Class: Map Fragments") || clipboardText.Contains("Item Class: Stackable Currency") || clipboardText.Contains("Item Class: Delve Stackable Socketable Currency"))
                 {
@@ -337,18 +429,21 @@ namespace PoEPartyGear
                             }
                     }
 
-                    OverlayPriceCheck form = new OverlayPriceCheck(
-                        new JObject {
-                                { "min", value},
-                                { "max", value},
-                                { "currency", currency}
-                        }.ToString(Newtonsoft.Json.Formatting.None));
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    if (Cursor.Position.X + form.Width > bounds.Width)
-                        form.Location = new Point(Cursor.Position.X - form.Width, Cursor.Position.Y);
-                    else
-                        form.Location = new Point(Cursor.Position.X, Cursor.Position.Y);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayPriceCheck form = new OverlayPriceCheck(
+                            new JObject {
+                                    { "min", value},
+                                    { "max", value},
+                                    { "currency", currency}
+                            }.ToString(Newtonsoft.Json.Formatting.None));
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        if (System.Windows.Forms.Cursor.Position.X + form.Width > bounds.Width)
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X - form.Width, System.Windows.Forms.Cursor.Position.Y);
+                        else
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+                        form.Show();
+                    }));
                 }
                 else if (clipboardText.Contains("Rarity: Rare"))
                 {
@@ -363,13 +458,16 @@ namespace PoEPartyGear
                                 _cache.Add(new CacheItem(clipboardText, poePriceesJSON), new CacheItemPolicy() { AbsoluteExpiration = new DateTimeOffset(DateTime.UtcNow.AddMinutes(10)) });
                         }
                     }
-                    OverlayPriceCheck form = new OverlayPriceCheck(poePriceesJSON);
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    if (Cursor.Position.X + form.Width > bounds.Width)
-                        form.Location = new Point(Cursor.Position.X - form.Width, Cursor.Position.Y);
-                    else
-                        form.Location = new Point(Cursor.Position.X, Cursor.Position.Y);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayPriceCheck form = new OverlayPriceCheck(poePriceesJSON);
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        if (System.Windows.Forms.Cursor.Position.X + form.Width > bounds.Width)
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X - form.Width, System.Windows.Forms.Cursor.Position.Y);
+                        else
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+                        form.Show();
+                    }));
                 }
                 else if (clipboardText.Contains("Rarity: Gem"))
                 {
@@ -430,18 +528,21 @@ namespace PoEPartyGear
                     }
                     valueMax = value;
 
-                    OverlayPriceCheck form = new OverlayPriceCheck(
-                        new JObject {
-                                { "min", value},
-                                { "max", valueMax},
-                                { "currency", currency}
-                        }.ToString(Newtonsoft.Json.Formatting.None));
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    if (Cursor.Position.X + form.Width > bounds.Width)
-                        form.Location = new Point(Cursor.Position.X - form.Width, Cursor.Position.Y);
-                    else
-                        form.Location = new Point(Cursor.Position.X, Cursor.Position.Y);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayPriceCheck form = new OverlayPriceCheck(
+                            new JObject {
+                                    { "min", value},
+                                    { "max", valueMax},
+                                    { "currency", currency}
+                            }.ToString(Newtonsoft.Json.Formatting.None));
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        if (System.Windows.Forms.Cursor.Position.X + form.Width > bounds.Width)
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X - form.Width, System.Windows.Forms.Cursor.Position.Y);
+                        else
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+                        form.Show();
+                    }));
                 }
                 else if (clipboardText.Contains("Rarity: Divination Card"))
                 {
@@ -479,39 +580,53 @@ namespace PoEPartyGear
                     }
                     valueMax = value;
 
-                    OverlayPriceCheck form = new OverlayPriceCheck(
-                        new JObject {
-                                { "min", value},
-                                { "max", valueMax},
-                                { "currency", currency}
-                        }.ToString(Newtonsoft.Json.Formatting.None));
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    if (Cursor.Position.X + form.Width > bounds.Width)
-                        form.Location = new Point(Cursor.Position.X - form.Width, Cursor.Position.Y);
-                    else
-                        form.Location = new Point(Cursor.Position.X, Cursor.Position.Y);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayPriceCheck form = new OverlayPriceCheck(
+                            new JObject {
+                                    { "min", value},
+                                    { "max", valueMax},
+                                    { "currency", currency}
+                            }.ToString(Newtonsoft.Json.Formatting.None));
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        if (System.Windows.Forms.Cursor.Position.X + form.Width > bounds.Width)
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X - form.Width, System.Windows.Forms.Cursor.Position.Y);
+                        else
+                            form.Location = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+                        form.Show();
+                    }));
                 }
                 else
                 {
-                    OverlayErrorMessage form = new OverlayErrorMessage($"E: Clipboard text error, {clipboardText}");
-                    Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                    form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                    form.ShowDialog();
+                    Invoke(new Action(() =>
+                    {
+                        OverlayErrorMessage form = new OverlayErrorMessage($"E: Clipboard text error, {clipboardText}");
+                        Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                        form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
+                        form.Show();
+                    }));
                 }
                 return;
             }
             catch (Exception ex)
             {
-                OverlayErrorMessage form = new OverlayErrorMessage($"E: {ex}");
-                Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
-                form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                form.ShowDialog();
+                Invoke(new Action(() =>
+                {
+                    OverlayErrorMessage form = new OverlayErrorMessage($"E: {ex}");
+                    Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                    form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
+                    form.Show();
+                }));
+                Globals.LogMessage(ex.ToString());
+            }
+            finally
+            {
+                LowLevelKeyboardHook.pause = false;
             }
         }
 
         bool busyRollingMap = false;
-        private async Task CtrlA_Pressed()
+        private void CtrlA_Pressed()
         {
             Point GetAlcLocation()
             {
@@ -549,35 +664,35 @@ namespace PoEPartyGear
 
 
             string clipboardText = string.Empty;
-            async Task CopyItemData()
+            void CopyItemData()
             {
                 new WshShell().SendKeys("^{c}");
-                await Task.Delay(100);
+                Thread.Sleep(100);
                 clipboardText = Clipboard.GetText();
                 int atemptes = 1;
                 while (string.IsNullOrEmpty(clipboardText) && atemptes < 5)
                 {
                     new WshShell().SendKeys("^{c}");
-                    await Task.Delay(150 + atemptes * 50);
+                    Thread.Sleep(150 + atemptes * 50);
                     clipboardText = Clipboard.GetText();
                     atemptes++;
                 }
                 Clipboard.Clear();
             }
-
+            LowLevelKeyboardHook.pause = true;
             try
             {
                 if (busyRollingMap)
                     return;
                 busyRollingMap = true;
 
-                Point mapLocation = Cursor.Position;
+                Point mapLocation = System.Windows.Forms.Cursor.Position;
 
                 int RollingAttempt = 0;
                 while (busyRollingMap)
                 {
-                    Cursor.Position = mapLocation;
-                    await CopyItemData();
+                    System.Windows.Forms.Cursor.Position = mapLocation;
+                    CopyItemData();
 
                     if (!clipboardText.Contains("Item Class: Maps") || clipboardText.Contains("Unidentified") || clipboardText.Contains("Corrupted"))
                     {
@@ -593,20 +708,20 @@ namespace PoEPartyGear
                         {
                             busyRollingMap = false;
                             OverlayErrorMessage form = new OverlayErrorMessage("Can't find alcs.");
-                            Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
+                            Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
                             form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                            form.ShowDialog();
+                            form.Show();
                             return;
                         }
 
-                        Cursor.Position = new Point(alcLocation.X + Properties.Resources.alc.Width / 2, alcLocation.Y);
-                        await Task.Delay(50);
+                        System.Windows.Forms.Cursor.Position = new Point(alcLocation.X + Properties.Resources.alc.Width / 2, alcLocation.Y);
+                        Thread.Sleep(50);
                         Win32.mouse_event(Win32.MOUSEEVENTF_RIGHTDOWN | Win32.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-                        await Task.Delay(50);
-                        Cursor.Position = mapLocation;
-                        await Task.Delay(50);
+                        Thread.Sleep(50);
+                        System.Windows.Forms.Cursor.Position = mapLocation;
+                        Thread.Sleep(50);
                         Win32.mouse_event(Win32.MOUSEEVENTF_LEFTDOWN | Win32.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                        await Task.Delay(50);
+                        Thread.Sleep(50);
                     }
                     else if (clipboardText.Contains("Rarity: Magic"))
                     {
@@ -615,20 +730,20 @@ namespace PoEPartyGear
                         {
                             busyRollingMap = false;
                             OverlayErrorMessage form = new OverlayErrorMessage("Can't find scours.");
-                            Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
+                            Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
                             form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                            form.ShowDialog();
+                            form.Show();
                             return;
                         }
 
-                        Cursor.Position = new Point(scourLocation.X + Properties.Resources.scour.Width / 2, scourLocation.Y);
-                        await Task.Delay(50);
+                        System.Windows.Forms.Cursor.Position = new Point(scourLocation.X + Properties.Resources.scour.Width / 2, scourLocation.Y);
+                        Thread.Sleep(50);
                         Win32.mouse_event(Win32.MOUSEEVENTF_RIGHTDOWN | Win32.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-                        await Task.Delay(50);
-                        Cursor.Position = mapLocation;
-                        await Task.Delay(50);
+                        Thread.Sleep(50);
+                        System.Windows.Forms.Cursor.Position = mapLocation;
+                        Thread.Sleep(50);
                         Win32.mouse_event(Win32.MOUSEEVENTF_LEFTDOWN | Win32.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                        await Task.Delay(50);
+                        Thread.Sleep(50);
                     }
                     else if (clipboardText.Contains("Rarity: Rare"))
                     {
@@ -640,20 +755,20 @@ namespace PoEPartyGear
                             {
                                 busyRollingMap = false;
                                 OverlayErrorMessage form = new OverlayErrorMessage("Can't find scours.");
-                                Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
+                                Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
                                 form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                                form.ShowDialog();
+                                form.Show();
                                 return;
                             }
 
-                            Cursor.Position = new Point(scourLocation.X + Properties.Resources.scour.Width / 2, scourLocation.Y);
-                            await Task.Delay(50);
+                            System.Windows.Forms.Cursor.Position = new Point(scourLocation.X + Properties.Resources.scour.Width / 2, scourLocation.Y);
+                            Thread.Sleep(50);
                             Win32.mouse_event(Win32.MOUSEEVENTF_RIGHTDOWN | Win32.MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-                            await Task.Delay(50);
-                            Cursor.Position = mapLocation;
-                            await Task.Delay(50);
+                            Thread.Sleep(50);
+                            System.Windows.Forms.Cursor.Position = mapLocation;
+                            Thread.Sleep(50);
                             Win32.mouse_event(Win32.MOUSEEVENTF_LEFTDOWN | Win32.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-                            await Task.Delay(50);
+                            Thread.Sleep(50);
                         }
                         else
                             busyRollingMap = false;
@@ -670,85 +785,13 @@ namespace PoEPartyGear
             {
                 busyRollingMap = false;
                 OverlayErrorMessage form = new OverlayErrorMessage($"E: {ex}");
-                Rectangle bounds = Screen.FromPoint(Cursor.Position).Bounds;
+                Rectangle bounds = Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
                 form.Location = new Point(bounds.Width - form.Width, bounds.Height - form.Height);
-                form.ShowDialog();
+                form.Show();
             }
-        }
-
-        private async void KeyboardHook_KeyPressedAsync(object sender, KeyPressedEventArgs e)
-        {
-            if (e.Key == Keys.D && e.Modifier == global::ModifierKeys.Control)
+            finally
             {
-                if (Win32.GetForegroundWindow() != handle)
-                {
-                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.D);
-                    new WshShell().SendKeys("^{d}");
-                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.D);
-                    return;
-                }
-                await CtrlD_Pressed();
-            }
-
-            if (e.Key == Keys.A && e.Modifier == global::ModifierKeys.Control)
-            {
-                if (Win32.GetForegroundWindow() != handle)
-                {
-                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.Control, Keys.A);
-                    new WshShell().SendKeys("^{a}");
-                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.Control, Keys.A);
-                    return;
-                }
-                await CtrlA_Pressed();
-            }
-
-            if (e.Key == Keys.F5 && e.Modifier == global::ModifierKeys.None)
-            {
-                if (Win32.GetForegroundWindow() != handle)
-                {
-                    Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.F5);
-                    new WshShell().SendKeys("{F5}");
-                    Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.F5);
-                    return;
-                }
-                if (!bool.Parse(Globals.iniHelper.Read("EnableHideoutTP") ?? "true"))
-                    return;
-                new WshShell().SendKeys("~/hideout~");
-                return;
-            }
-
-            if (e.Key == Keys.D1 && e.Modifier == global::ModifierKeys.None)
-            {
-                Globals.keyboardHook.UnregisterHotKey(global::ModifierKeys.None, Keys.D1);
-                new WshShell().SendKeys("{1}");
-                Globals.keyboardHook.RegisterHotKey(global::ModifierKeys.None, Keys.D1);
-
-                if (Win32.GetForegroundWindow() != handle)
-                    return;
-                if (!bool.Parse(Globals.iniHelper.Read("EnableFlaskHelper") ?? "true"))
-                    return;
-                await Task.Delay(new Random().Next(75));
-                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey2") ?? "true"))
-                {
-                    await Task.Delay(new Random().Next(75));
-                    new WshShell().SendKeys("2");
-                }
-                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey3") ?? "true"))
-                {
-                    await Task.Delay(new Random().Next(75));
-                    new WshShell().SendKeys("3");
-                }
-                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey4") ?? "true"))
-                {
-                    await Task.Delay(new Random().Next(75));
-                    new WshShell().SendKeys("4");
-                }
-                if (bool.Parse(Globals.iniHelper.Read("EnableFlaskHelperKey5") ?? "true"))
-                {
-                    await Task.Delay(new Random().Next(75));
-                    new WshShell().SendKeys("5");
-                }
-                return;
+                LowLevelKeyboardHook.pause = false;
             }
         }
 
@@ -760,6 +803,7 @@ namespace PoEPartyGear
         public void getGameWindowHandle()
         {
             handle = 0;
+            process = null;
             //var allP = Process.GetProcesses();
             if (Process.GetProcesses().Any(x => x.ProcessName == "PathOfExileSteam"))
             {
@@ -780,11 +824,11 @@ namespace PoEPartyGear
                 if (!bool.Parse(Globals.iniHelper.Read("EnableViewProfileButton") ?? "true"))
                     return;
 
-                if (Application.OpenForms.OfType<OverlayButton>().Count() == 0 && Application.OpenForms.OfType<BrowserForm>().Count() == 0)
+                if (Application.OpenForms.OfType<OverlayButton>().Count() == 0 && Application.OpenForms.OfType<BrowserForm>().Count() == 0 && Application.OpenForms.OfType<SettingsForm>().Count() == 0 && Application.OpenForms.OfType<OverlayPriceCheck>().Count() == 0)
                 {
                     if (handle == 0)
                         getGameWindowHandle();
-                    if (handle != 0 && process != null)
+                    if (handle != 0)
                     {
                         using (Bitmap CurrentView = ImageProcessing.ScreenshotWindow(handle))
                         using (Bitmap croppedCurrentView = ImageProcessing.cropAtRect(CurrentView, new Rectangle(0, 0, (int)(CurrentView.Width*0.7), CurrentView.Height)))
@@ -803,7 +847,7 @@ namespace PoEPartyGear
 
                                         OverlayButton form = new OverlayButton(text);
                                         form.Location = new Point(topLeft.X, topLeft.Y - form.Height);
-                                        form.ShowDialog();
+                                        form.Show();
                                     }
                                 }
                             }
@@ -811,13 +855,15 @@ namespace PoEPartyGear
                     }
                 }
             }
-            catch { }
+            catch {
+                getGameWindowHandle();
+            }
             timer1.Enabled = true;
         }
 
         private void HiddenMain_FormClosed(object sender, FormClosedEventArgs e)
         {
-            Globals.keyboardHook.Dispose();
+            LowLevelKeyboardHook.Stop();
         }
 
         protected override CreateParams CreateParams
@@ -833,7 +879,7 @@ namespace PoEPartyGear
         private void toolStripMenuItem1_Click(object sender, EventArgs e)
         {
             SettingsForm form = new SettingsForm();
-            form.ShowDialog();
+            form.Show();
         }
     }
 }

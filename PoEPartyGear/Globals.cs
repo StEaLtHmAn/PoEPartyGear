@@ -12,21 +12,21 @@ namespace PoEPartyGear
 {
     public static class Globals
     {
-        public static KeyboardHook keyboardHook = new KeyboardHook();
+        //public static KeyboardHook keyboardHook = new KeyboardHook();
         public static IniHelper iniHelper = new IniHelper("settings.ini");
         public static Dictionary<string, string> CategoryCache = new Dictionary<string, string>();
         public static string access_token = null;
         public static string clientId = null;
 
-        //public static void LogMessage(string message)
-        //{
-        //    string filename = $"{Assembly.GetExecutingAssembly().GetName().Name}.log";
-        //    if (File.Exists(filename) && new FileInfo(filename).Length > 1048576)
-        //    {
-        //        File.Delete(filename);
-        //    }
-        //    File.AppendAllText(filename, $"{DateTime.Now}: {message}{Environment.NewLine}");
-        //}
+        public static void LogMessage(string message)
+        {
+            string filename = $"{Assembly.GetExecutingAssembly().GetName().Name}.log";
+            if (File.Exists(filename) && new FileInfo(filename).Length > 1048576)
+            {
+                File.Delete(filename);
+            }
+            File.AppendAllText(filename, $"{DateTime.Now}: {message}{Environment.NewLine}");
+        }
 
         public static void DelayAction(int millisecond, Action action)
         {

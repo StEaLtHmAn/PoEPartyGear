@@ -109,7 +109,6 @@
     </Compile>
     <Compile Include="Globals.cs" />
     <Compile Include="IniHelper.cs" />
-    <Compile Include="KeyboardHook.cs" />
     <Compile Include="HiddenMain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -117,6 +116,7 @@
       <DependentUpon>HiddenMain.cs</DependentUpon>
     </Compile>
     <Compile Include="ImageProcessing.cs" />
+    <Compile Include="LowLevelKeyboardHook.cs" />
     <Compile Include="MouseHook.cs" />
     <Compile Include="NewProgressBar.cs">
       <SubType>Component</SubType>

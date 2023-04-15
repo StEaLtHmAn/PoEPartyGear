@@ -90,7 +90,7 @@ namespace PoEPartyGear
 
 
             BrowserForm form = new BrowserForm($"https://www.pathofexile.com/account/view-profile/{accountName}/characters?&characterName={characterName}", title);
-            form.ShowDialog();
+            form.Show();
 
             MouseHook.stop();
             Dispose();
